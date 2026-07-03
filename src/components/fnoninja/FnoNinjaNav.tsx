@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Loader2, LogOut, Menu, MessageCircle, X } from "lucide-react";
@@ -16,12 +17,12 @@ import { FnoNinjaNavLiveslideHelp } from "@/components/fnoninja/FnoNinjaNavLives
 import { FnoNinjaNavSearch } from "@/components/fnoninja/FnoNinjaNavSearch";
 import {
   fnoAnalyticsHref,
-  fnoHomeHref,
   fnoLearnHref,
+  fnoLoginHref,
   fnoMarketingHash,
+  fnoProductHomeHref,
   isFnoNinjaLandingPath,
 } from "@/lib/fnoninja/paths";
-import { consumeFnoPostLoginRedirect } from "@/lib/fnoninja/post-login-redirect";
 import { FNO_NAV_SPACER_CLASS } from "@/lib/fnoninja/responsive";
 import { FB_CONTENT_SHELL, FB_LEVELS_SHELL, FNO_LANDING_SHELL } from "@/lib/freedombot/responsive";
 import { FNO_BG, FNO_CTA_GRADIENT, FNO_CTA_SHADOW, FNO_NAV_BORDER } from "@/lib/fnoninja/theme";
@@ -50,7 +51,7 @@ const MENU_BTN_STYLE = {
   backgroundColor: "rgba(37,99,235,0.06)",
 } as const;
 
-/** Landing header CTA — log in → bubbles; signed-in users go straight to the map. */
+/** Landing header CTA — log in → dedicated page; signed-in users go straight to the map. */
 function FnoNinjaLandingNavCta({
   className = "",
   onAction,
@@ -59,9 +60,9 @@ function FnoNinjaLandingNavCta({
   onAction?: () => void;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
   const { user, isUserLoading } = useUser();
   const bubblesHref = fnoAnalyticsHref(pathname);
+  const loginHref = fnoLoginHref(pathname, bubblesHref);
 
   if (isUserLoading) return null;
 
@@ -82,27 +83,27 @@ function FnoNinjaLandingNavCta({
   }
 
   return (
-    <FnoNinjaGoogleSignInButton
-      className={className}
-      label="Log in"
-      showGoogleIcon={false}
-      postSignInHref={bubblesHref}
-      onSignedIn={() => {
-        consumeFnoPostLoginRedirect();
-        onAction?.();
-        router.replace(bubblesHref);
+    <Link
+      href={loginHref}
+      onClick={onAction}
+      className={`inline-flex items-center justify-center font-bold transition-all hover:scale-105 gap-1.5 rounded-lg px-4 py-2 text-xs sm:text-sm text-white ${className}`}
+      style={{
+        background: FNO_CTA_GRADIENT,
+        boxShadow: FNO_CTA_SHADOW,
       }}
-    />
+    >
+      Log in
+    </Link>
   );
 }
 
 export function FnoNinjaNav() {
   const pathname = usePathname();
-  const homeHref = fnoHomeHref(pathname);
-  const isLevelsApp = isFnoNinjaLevelsPath(pathname);
-  const showNavSearch = !isFnoNinjaLandingPath(pathname);
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
+  const isLevelsApp = isFnoNinjaLevelsPath(pathname);
+  const productHomeHref = fnoProductHomeHref(pathname, !!user && !isUserLoading);
+  const showNavSearch = !isFnoNinjaLandingPath(pathname);
   const { toggle: toggleChat, open: chatOpen, unreadCount: chatUnread } = useChatPanel();
   const showChatButton = !!user && !isFnoNinjaLandingPath(pathname);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -156,7 +157,7 @@ export function FnoNinjaNav() {
               </button>
             )}
 
-            <Link href={homeHref} className="flex-shrink-0 min-w-0">
+            <Link href={productHomeHref} className="flex-shrink-0 min-w-0">
               <FnoNinjaLogo size={34} />
             </Link>
           </div>
