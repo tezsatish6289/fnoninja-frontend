@@ -4,15 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Loader2, LogOut, Menu, MessageCircle, X } from "lucide-react";
+import { CreditCard, Loader2, LogOut, Menu, X } from "lucide-react";
 import { FnoNinjaGoogleSignInButton } from "@/components/fnoninja/FnoNinjaGoogleSignInButton";
 import { FnoNinjaLogo } from "@/components/fnoninja/FnoNinjaLogo";
-import { useChatPanel } from "@/components/fnoninja/chat/ChatPanelContext";
+import { FnoNinjaSubscriptionBadge } from "@/components/fnoninja/FnoNinjaSubscriptionBadge";
 import { useAuth, useUser } from "@/firebase";
 import { initiateSignOut } from "@/firebase/non-blocking-login";
+import { trackCtaClick } from "@/firebase/analytics";
 import { isFnoNinjaLevelsPath } from "@/lib/fnoninja/auth";
-import { FnoNinjaNavLearn } from "@/components/fnoninja/FnoNinjaNavLearn";
-import { FnoNinjaNavLiveslideHelp } from "@/components/fnoninja/FnoNinjaNavLiveslideHelp";
 import { FnoNinjaNavSearch } from "@/components/fnoninja/FnoNinjaNavSearch";
 import {
   fnoAnalyticsHref,
@@ -20,19 +19,22 @@ import {
   fnoLoginHref,
   fnoMarketingHash,
   fnoProductHomeHref,
+  fnoSubscribeHref,
+  fnoWebinarHref,
   isFnoNinjaLandingPath,
 } from "@/lib/fnoninja/paths";
 import { FNO_NAV_SPACER_CLASS } from "@/lib/fnoninja/responsive";
 import { FB_CONTENT_SHELL, FB_LEVELS_SHELL, FNO_LANDING_SHELL } from "@/lib/freedombot/responsive";
 import { FNO_LOGIN_NAV_HINT } from "@/lib/fnoninja/login-copy";
-import { FNO_BG, FNO_CTA_GRADIENT, FNO_CTA_SHADOW, FNO_NAV_BORDER } from "@/lib/fnoninja/theme";
+import { FNO_BG, FNO_NAV_BORDER } from "@/lib/fnoninja/theme";
 
 /** Reserve space below the fixed header in page layout. */
 export const FNO_NAV_HEIGHT_CLASS = "h-14 sm:h-16";
 
 const ANCHOR_LINKS = [
-  { label: "How it works", href: "#how-it-works" },
+  { label: "How it works", href: "#how" },
   { label: "Community", href: "#community" },
+  { label: "Webinar", href: "/webinar", isPath: true },
   { label: "Pricing", href: "#pricing" },
   { label: "Disclaimer", href: "#disclaimer" },
 ] as const;
@@ -70,11 +72,13 @@ function FnoNinjaLandingNavCta({
     return (
       <Link
         href={bubblesHref}
-        onClick={onAction}
-        className={`inline-flex items-center justify-center font-bold transition-all hover:scale-105 gap-1.5 rounded-lg px-4 py-2 text-xs sm:text-sm text-white ${className}`}
+        onClick={() => {
+          trackCtaClick("nav_explore_map", { label: "Explore live market map" });
+          onAction?.();
+        }}
+        className={`inline-flex items-center justify-center font-bold transition-all hover:scale-105 hover:bg-[#2563eb] gap-1.5 rounded-lg px-4 py-2 text-xs sm:text-sm text-white ${className}`}
         style={{
-          background: FNO_CTA_GRADIENT,
-          boxShadow: FNO_CTA_SHADOW,
+          backgroundColor: "#3b82f6",
         }}
       >
         Explore live market map
@@ -85,11 +89,13 @@ function FnoNinjaLandingNavCta({
   return (
     <Link
       href={loginHref}
-      onClick={onAction}
-      className={`inline-flex items-center justify-center font-bold transition-all hover:scale-105 gap-1.5 rounded-lg px-4 py-2 text-xs sm:text-sm text-white ${className}`}
+      onClick={() => {
+        trackCtaClick("nav_login", { label: "Log in" });
+        onAction?.();
+      }}
+      className={`inline-flex items-center justify-center font-bold transition-all hover:scale-105 hover:bg-[#2563eb] gap-1.5 rounded-lg px-4 py-2 text-xs sm:text-sm text-white ${className}`}
       style={{
-        background: FNO_CTA_GRADIENT,
-        boxShadow: FNO_CTA_SHADOW,
+        backgroundColor: "#3b82f6",
       }}
     >
       Log in
@@ -104,8 +110,6 @@ export function FnoNinjaNav() {
   const isLevelsApp = isFnoNinjaLevelsPath(pathname);
   const productHomeHref = fnoProductHomeHref(pathname, !!user && !isUserLoading);
   const showNavSearch = !isFnoNinjaLandingPath(pathname);
-  const { toggle: toggleChat, open: chatOpen, unreadCount: chatUnread } = useChatPanel();
-  const showChatButton = !!user && !isFnoNinjaLandingPath(pathname);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -157,42 +161,25 @@ export function FnoNinjaNav() {
               </button>
             )}
 
-            <Link href={productHomeHref} className="flex-shrink-0 min-w-0">
+            <Link
+              href={productHomeHref}
+              onClick={() => trackCtaClick("nav_logo_home", { label: "FNONINJA logo" })}
+              className="flex-shrink-0 min-w-0"
+            >
               <FnoNinjaLogo size={34} />
             </Link>
           </div>
 
-          <div className="ml-auto flex items-center gap-2 flex-shrink-0">
-            {isLevelsApp ? <FnoNinjaNavLiveslideHelp /> : null}
-            <FnoNinjaNavLearn />
-            {showNavSearch ? <FnoNinjaNavSearch /> : null}
-            {showChatButton ? (
-              <button
-                type="button"
-                onClick={toggleChat}
-                className="relative flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 rounded-lg transition-colors shrink-0 hover:text-white"
-                style={{
-                  color: chatOpen ? "#93c5fd" : "#94a3b8",
-                  border: `1px solid ${chatOpen ? "rgba(96,165,250,0.35)" : "rgba(90,140,220,0.15)"}`,
-                  backgroundColor: chatOpen ? "rgba(37,99,235,0.12)" : "rgba(37,99,235,0.06)",
-                }}
-                aria-label={chatUnread ? "Community chat, new messages" : "Community chat"}
-                aria-pressed={chatOpen}
-                title="Community chat"
-              >
-                <MessageCircle className="h-4 w-4 sm:h-[1.125rem] sm:w-[1.125rem]" />
-                {!chatOpen && chatUnread ? (
-                  <span
-                    className="absolute top-1 right-1 h-2 w-2 rounded-full"
-                    style={{
-                      backgroundColor: "#60a5fa",
-                      boxShadow: "0 0 0 2px rgba(8,15,30,0.95)",
-                    }}
-                    aria-hidden
-                  />
-                ) : null}
-              </button>
-            ) : null}
+          {showNavSearch ? (
+            <div className="flex-1 min-w-0 flex justify-end pl-2 sm:pl-3">
+              <FnoNinjaNavSearch />
+            </div>
+          ) : (
+            <div className="flex-1 min-w-0" aria-hidden />
+          )}
+
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {!isLanding ? <FnoNinjaSubscriptionBadge /> : null}
             {!isLevelsApp && isFnoNinjaLandingPath(pathname) ? (
               <>
                 <div className="hidden md:block">
@@ -269,9 +256,22 @@ export function FnoNinjaNav() {
                       {user.email}
                     </p>
                   </div>
+                  <Link
+                    href={fnoSubscribeHref(pathname)}
+                    onClick={() => setMenuOpen(false)}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white"
+                    style={{
+                      border: "1px solid rgba(90,140,220,0.2)",
+                      backgroundColor: "rgba(37,99,235,0.08)",
+                    }}
+                  >
+                    <CreditCard className="h-4 w-4" style={{ color: "#60a5fa" }} />
+                    My subscription
+                  </Link>
                   <button
                     type="button"
                     onClick={() => {
+                      trackCtaClick("sign_out", { label: "Sign out" });
                       if (auth) initiateSignOut(auth);
                       setMenuOpen(false);
                     }}
@@ -337,22 +337,43 @@ export function FnoNinjaNav() {
             <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
               <Link
                 href={fnoLearnHref(pathname)}
-                onClick={() => setMenuOpen(false)}
+                onClick={() => {
+                  trackCtaClick("nav_learn", { label: "Learn" });
+                  setMenuOpen(false);
+                }}
                 className="flex items-center px-4 py-3.5 rounded-xl text-base font-semibold transition-colors hover:text-white"
                 style={{ color: "#94a3b8" }}
               >
                 Learn
               </Link>
               {ANCHOR_LINKS.map((l) => (
-                <a
-                  key={l.label}
-                  href={fnoMarketingHash(pathname, l.href)}
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center px-4 py-3.5 rounded-xl text-base font-semibold transition-colors hover:text-white"
-                  style={{ color: "#94a3b8" }}
-                >
-                  {l.label}
-                </a>
+                l.isPath ? (
+                  <Link
+                    key={l.label}
+                    href={fnoWebinarHref(pathname)}
+                    onClick={() => {
+                      trackCtaClick("nav_webinar", { label: l.label });
+                      setMenuOpen(false);
+                    }}
+                    className="flex items-center px-4 py-3.5 rounded-xl text-base font-semibold transition-colors hover:text-white"
+                    style={{ color: "#94a3b8" }}
+                  >
+                    {l.label}
+                  </Link>
+                ) : (
+                  <a
+                    key={l.label}
+                    href={fnoMarketingHash(pathname, l.href)}
+                    onClick={() => {
+                      trackCtaClick("nav_anchor", { label: l.label, anchor: l.href });
+                      setMenuOpen(false);
+                    }}
+                    className="flex items-center px-4 py-3.5 rounded-xl text-base font-semibold transition-colors hover:text-white"
+                    style={{ color: "#94a3b8" }}
+                  >
+                    {l.label}
+                  </a>
+                )
               ))}
             </nav>
 
